@@ -1231,22 +1231,26 @@ Drawing.prototype.makeImage = function () {
                 });
             }
             break;
-        case 'URL':
-            console.log("URL URL URL")
-            if (this._htOption._drawer === 'svg') {
-                const svgData = this._oContext.getSerializedSvg();
-                const optimizedData = optimize(svgData).data;
-                console.log("File size:", optimizedData.length, "bytes");
-                this.resolve(optimizedData);
-            } else {
-                const format = this._htOption.format === 'PNG' ? 'image/png' : 'image/jpeg';
-                console.log("this._canvas", this._canvas)
-                this._canvas.toDataURL(format, (err, data) => {
-                    console.log("File size:", data.length, "bytes");
-                    this.resolve(data);
-                });
-            }
-            break;
+            case 'URL':
+                console.log("URL URL URL")
+                if (this._htOption._drawer === 'svg') {
+                    const svgData = this._oContext.getSerializedSvg();
+                    const optimizedData = optimize(svgData).data;
+                    console.log("File size:", optimizedData.length, "bytes");
+                    this.resolve(optimizedData);
+                } else {
+                    const format = this._htOption.format === 'PNG' ? 'image/png' : 'image/jpeg';
+                    console.log("this._canvas", this._canvas)
+            
+                    try {
+                        const data = this._canvas.toDataURL(format);
+                        console.log("File size:", data.length, "bytes");
+                        this.resolve(data);
+                    } catch (error) {
+                        console.error("Error converting canvas to data URL:", error);
+                    }
+                }
+                break;
 
         case 'STREAM':
             const stream = this._htOption.format === 'PNG'
