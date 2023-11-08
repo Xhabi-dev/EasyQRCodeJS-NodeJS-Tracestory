@@ -20,7 +20,7 @@
 var {
     createCanvas, loadImage, Image
 } = require('canvas');
-
+console.log("create canvas ", createCanvas)
 var jsdom = require('jsdom');
 var C2S = require('./canvas2svg');
 var fs = require('fs');
@@ -38,42 +38,50 @@ function QR8bitByte(data, binary, utf8WithoutBOM) {
     this.data = data;
     this.parsedData = [];
 
-    function toUTF8Array(str) {
-        var utf8 = [];
-        for (var i = 0; i < str.length; i++) {
-            var charcode = str.charCodeAt(i);
-            if (charcode < 0x80) utf8.push(charcode); else if (charcode < 0x800) {
+    const toUTF8Array = (str) => {
+        const utf8 = [];
+        for (let i = 0; i < str.length; i++) {
+            const charcode = str.charCodeAt(i);
+            if (charcode < 0x80) {
+                utf8.push(charcode);
+            } else if (charcode < 0x800) {
                 utf8.push(0xc0 | (charcode >> 6), 0x80 | (charcode & 0x3f));
             } else if (charcode < 0xd800 || charcode >= 0xe000) {
-                utf8.push(0xe0 | (charcode >> 12), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+                utf8.push(
+                    0xe0 | (charcode >> 12),
+                    0x80 | ((charcode >> 6) & 0x3f),
+                    0x80 | (charcode & 0x3f)
+                );
             } else {
                 i++;
-                charcode = 0x10000 + (((charcode & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
-                utf8.push(0xf0 | (charcode >> 18), 0x80 | ((charcode >> 12) & 0x3f), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+                const charcode2 = 0x10000 + (((charcode & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+                utf8.push(
+                    0xf0 | (charcode2 >> 18),
+                    0x80 | ((charcode2 >> 12) & 0x3f),
+                    0x80 | ((charcode2 >> 6) & 0x3f),
+                    0x80 | (charcode2 & 0x3f)
+                );
             }
         }
         return utf8;
-    }
+    };
 
     if (binary) {
-        for (var i = 0, l = this.data.length; i < l; i++) {
-            var byteArray = [];
-            var code = this.data.charCodeAt(i);
+        for (let i = 0, l = this.data.length; i < l; i++) {
+            const byteArray = [];
+            const code = this.data.charCodeAt(i);
             byteArray[0] = code;
 
             this.parsedData.push(byteArray);
         }
-        this.parsedData = Array.prototype.concat.apply([], this.parsedData);
-
+        this.parsedData = [].concat(...this.parsedData);
     } else {
         this.parsedData = toUTF8Array(data);
     }
 
-    this.parsedData = Array.prototype.concat.apply([], this.parsedData);
-    if (!utf8WithoutBOM && this.parsedData.length != this.data.length) {
-        this.parsedData.unshift(191);
-        this.parsedData.unshift(187);
-        this.parsedData.unshift(239);
+    this.parsedData = [].concat(...this.parsedData);
+    if (!utf8WithoutBOM && this.parsedData.length !== this.data.length) {
+        this.parsedData.unshift(191, 187, 239);
     }
 }
 
@@ -97,37 +105,48 @@ function QRCodeModel(typeNumber, errorCorrectLevel) {
 }
 
 QRCodeModel.prototype = {
-    addData: function (data, binary, utf8WithoutBOM) {
-        var newData = new QR8bitByte(data, binary, utf8WithoutBOM);
-        this.dataList.push(newData);
-        this.dataCache = null;
-    }, isDark: function (row, col) {
-        if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
-            throw new Error(row + "," + col);
-        }
-        return this.modules[row][col][0];
-    }, getEye: function (row, col) {
-        if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
-            throw new Error(row + "," + col);
+addData(data, binary, utf8WithoutBOM) {
+  const newData = new QR8bitByte(data, binary, utf8WithoutBOM);
+  this.dataList.push(newData);
+  this.dataCache = null;
+},
+isDark(row, col) {
+    const isValidPosition = row >= 0 && row < this.moduleCount && col >= 0 && col < this.moduleCount;
+    if (!isValidPosition) {
+        throw new Error(`${row},${col}`);
+    }
+    return this.modules[row][col][0];
+},
+getEyeBlock: function (row, col) {
+    // Check if row and col are within valid range
+    if (row < 0 || row >= this.moduleCount || col < 0 || col >= this.moduleCount) {
+        throw new Error(`${row},${col}`);
+    }
+
+    // Get the block from modules array
+    const [isDark, eyeOuterOrInner, position] = this.modules[row][col];
+
+    // Check if eyeOuterOrInner is truthy
+    if (eyeOuterOrInner) {
+        let type = `P${eyeOuterOrInner}_${position}`;
+
+        // Check if position is 'A'
+        if (position === 'A') {
+            type = `A${eyeOuterOrInner}`;
         }
 
-        var block = this.modules[row][col]; // [isDark(ture/false), EyeOuterOrInner(O/I), Position(TL/TR/BL/A) ]
+        return {
+            isDarkBlock: isDark,
+            type: type
+        };
+    }
 
-        if (block[1]) {
-            var type = 'P' + block[1] + '_' + block[2]; //PO_TL, PI_TL, PO_TR, PI_TR, PO_BL, PI_BL
-            if (block[2] == 'A') {
-                type = 'A' + block[1]; // AI, AO
-            }
-
-            return {
-                isDarkBlock: block[0], type: type
-            };
-        } else {
-            return null;
-        }
-    }, getModuleCount: function () {
+    return null;
+},
+    getModuleCount: function () {
         return this.moduleCount;
-    }, make: function () {
+    },
+    make: function () {
         this.makeImpl(false, this.getBestMaskPattern());
     }, makeImpl: function (test, maskPattern) {
         this.moduleCount = this.typeNumber * 4 + 17;
@@ -151,7 +170,8 @@ QRCodeModel.prototype = {
             this.dataCache = QRCodeModel.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
         }
         this.mapData(this.dataCache, maskPattern);
-    }, setupPositionProbePattern: function (row, col, posName) {
+    },
+    setupPositionProbePattern: function (row, col, posName) {
         for (var r = -1; r <= 7; r++) {
             if (row + r <= -1 || this.moduleCount <= row + r) continue;
             for (var c = -1; c <= 7; c++) {
@@ -170,7 +190,9 @@ QRCodeModel.prototype = {
                 }
             }
         }
-    }, getBestMaskPattern: function () {
+    },
+    getBestMaskPattern: function () {
+        console.log("im maskiiing")
         var minLostPoint = 0;
         var pattern = 0;
         for (var i = 0; i < 8; i++) {
@@ -182,27 +204,10 @@ QRCodeModel.prototype = {
             }
         }
         return pattern;
-    }, createMovieClip: function (target_mc, instance_name, depth) {
-        var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
-        var cs = 1;
-        this.make();
-        for (var row = 0; row < this.modules.length; row++) {
-            var y = row * cs;
-            for (var col = 0; col < this.modules[row].length; col++) {
-                var x = col * cs;
-                var dark = this.modules[row][col][0];
-                if (dark) {
-                    qr_mc.beginFill(0, 100);
-                    qr_mc.moveTo(x, y);
-                    qr_mc.lineTo(x + cs, y);
-                    qr_mc.lineTo(x + cs, y + cs);
-                    qr_mc.lineTo(x, y + cs);
-                    qr_mc.endFill();
-                }
-            }
-        }
-        return qr_mc;
-    }, setupTimingPattern: function () {
+    },
+
+    setupTimingPattern: function () {
+        console.log("im timing")
         for (var r = 8; r < this.moduleCount - 8; r++) {
             if (this.modules[r][6][0] != null) {
                 continue;
@@ -215,7 +220,9 @@ QRCodeModel.prototype = {
             }
             this.modules[6][c][0] = (c % 2 == 0);
         }
-    }, setupPositionAdjustPattern: function (posName) {
+    },
+    setupPositionAdjustPattern: function (posName) {
+        console.log("im pos")
         var pos = QRUtil.getPatternPosition(this.typeNumber);
         for (var i = 0; i < pos.length; i++) {
             for (var j = 0; j < pos.length; j++) {
@@ -241,7 +248,9 @@ QRCodeModel.prototype = {
                 }
             }
         }
-    }, setupTypeNumber: function (test) {
+    },
+    setupTypeNumber: function (test) {
+        console.log("im type")
         var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
         for (var i = 0; i < 18; i++) {
             var mod = (!test && ((bits >> i) & 1) == 1);
@@ -251,7 +260,9 @@ QRCodeModel.prototype = {
             var mod = (!test && ((bits >> i) & 1) == 1);
             this.modules[i % 3 + this.moduleCount - 8 - 3][Math.floor(i / 3)][0] = mod;
         }
-    }, setupTypeInfo: function (test, maskPattern) {
+    },
+    setupTypeInfo: function (test, maskPattern) {
+        console.log("im type info")
         var data = (this.errorCorrectLevel << 3) | maskPattern;
         var bits = QRUtil.getBCHTypeInfo(data);
         for (var i = 0; i < 15; i++) {
@@ -275,7 +286,9 @@ QRCodeModel.prototype = {
             }
         }
         this.modules[this.moduleCount - 8][8][0] = (!test);
-    }, mapData: function (data, maskPattern) {
+    },
+    mapData: function (data, maskPattern) {
+        console.log("im data")
         var inc = -1;
         var row = this.moduleCount - 1;
         var bitIndex = 7;
@@ -314,84 +327,97 @@ QRCodeModel.prototype = {
 QRCodeModel.PAD0 = 0xEC;
 QRCodeModel.PAD1 = 0x11;
 QRCodeModel.createData = function (typeNumber, errorCorrectLevel, dataList) {
-    var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
-    var buffer = new QRBitBuffer();
-    for (var i = 0; i < dataList.length; i++) {
-        var data = dataList[i];
+    console.log("im new create")
+    const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+    const buffer = new QRBitBuffer();
+    
+    for (const data of dataList) {
         buffer.put(data.mode, 4);
         buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber));
         data.write(buffer);
     }
-    var totalDataCount = 0;
-    for (var i = 0; i < rsBlocks.length; i++) {
-        totalDataCount += rsBlocks[i].dataCount;
-    }
+    
+    const totalDataCount = rsBlocks.reduce((acc, rsBlock) => acc + rsBlock.dataCount, 0);
+    
     if (buffer.getLengthInBits() > totalDataCount * 8) {
-        throw new Error("code length overflow. (" + buffer.getLengthInBits() + ">" + totalDataCount * 8 + ")");
+        throw new Error(`code length overflow. (${buffer.getLengthInBits()} > ${totalDataCount * 8})`);
     }
+    
     if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
         buffer.put(0, 4);
     }
+    
     while (buffer.getLengthInBits() % 8 != 0) {
         buffer.putBit(false);
     }
-    while (true) {
-        if (buffer.getLengthInBits() >= totalDataCount * 8) {
-            break;
-        }
+    
+    while (buffer.getLengthInBits() < totalDataCount * 8) {
         buffer.put(QRCodeModel.PAD0, 8);
-        if (buffer.getLengthInBits() >= totalDataCount * 8) {
-            break;
+        
+        if (buffer.getLengthInBits() < totalDataCount * 8) {
+            buffer.put(QRCodeModel.PAD1, 8);
         }
-        buffer.put(QRCodeModel.PAD1, 8);
     }
+    
     return QRCodeModel.createBytes(buffer, rsBlocks);
 };
 QRCodeModel.createBytes = function (buffer, rsBlocks) {
-    var offset = 0;
-    var maxDcCount = 0;
-    var maxEcCount = 0;
-    var dcdata = new Array(rsBlocks.length);
-    var ecdata = new Array(rsBlocks.length);
-    for (var r = 0; r < rsBlocks.length; r++) {
-        var dcCount = rsBlocks[r].dataCount;
-        var ecCount = rsBlocks[r].totalCount - dcCount;
+    console.log("im new createBytes")
+    let offset = 0;
+    let maxDcCount = 0;
+    let maxEcCount = 0;
+    const dcData = new Array(rsBlocks.length);
+    const ecData = new Array(rsBlocks.length);
+
+    for (let r = 0; r < rsBlocks.length; r++) {
+        const dcCount = rsBlocks[r].dataCount;
+        const ecCount = rsBlocks[r].totalCount - dcCount;
+
         maxDcCount = Math.max(maxDcCount, dcCount);
         maxEcCount = Math.max(maxEcCount, ecCount);
-        dcdata[r] = new Array(dcCount);
-        for (var i = 0; i < dcdata[r].length; i++) {
-            dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+
+        dcData[r] = new Array(dcCount);
+        for (let i = 0; i < dcData[r].length; i++) {
+            dcData[r][i] = 0xff & buffer.buffer[i + offset];
         }
+
         offset += dcCount;
-        var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
-        var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
-        var modPoly = rawPoly.mod(rsPoly);
-        ecdata[r] = new Array(rsPoly.getLength() - 1);
-        for (var i = 0; i < ecdata[r].length; i++) {
-            var modIndex = i + modPoly.getLength() - ecdata[r].length;
-            ecdata[r][i] = (modIndex >= 0) ? modPoly.get(modIndex) : 0;
+
+        const rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+        const rawPoly = new QRPolynomial(dcData[r], rsPoly.getLength() - 1);
+        const modPoly = rawPoly.mod(rsPoly);
+
+        ecData[r] = new Array(rsPoly.getLength() - 1);
+        for (let i = 0; i < ecData[r].length; i++) {
+            const modIndex = i + modPoly.getLength() - ecData[r].length;
+            ecData[r][i] = (modIndex >= 0) ? modPoly.get(modIndex) : 0;
         }
     }
-    var totalCodeCount = 0;
-    for (var i = 0; i < rsBlocks.length; i++) {
+
+    let totalCodeCount = 0;
+    for (let i = 0; i < rsBlocks.length; i++) {
         totalCodeCount += rsBlocks[i].totalCount;
     }
-    var data = new Array(totalCodeCount);
-    var index = 0;
-    for (var i = 0; i < maxDcCount; i++) {
-        for (var r = 0; r < rsBlocks.length; r++) {
-            if (i < dcdata[r].length) {
-                data[index++] = dcdata[r][i];
+
+    const data = new Array(totalCodeCount);
+    let index = 0;
+
+    for (let i = 0; i < maxDcCount; i++) {
+        for (let r = 0; r < rsBlocks.length; r++) {
+            if (i < dcData[r].length) {
+                data[index++] = dcData[r][i];
             }
         }
     }
-    for (var i = 0; i < maxEcCount; i++) {
-        for (var r = 0; r < rsBlocks.length; r++) {
-            if (i < ecdata[r].length) {
-                data[index++] = ecdata[r][i];
+
+    for (let i = 0; i < maxEcCount; i++) {
+        for (let r = 0; r < rsBlocks.length; r++) {
+            if (i < ecData[r].length) {
+                data[index++] = ecData[r][i];
             }
         }
     }
+
     return data;
 };
 var QRMode = {
@@ -415,13 +441,13 @@ var QRUtil = {
     G15: (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
     G18: (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
     G15_MASK: (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1),
-    getBCHTypeInfo: function (data) {
-        var d = data << 10;
-        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
-            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15)));
-        }
-        return ((data << 10) | d) ^ QRUtil.G15_MASK;
-    },
+getBCHTypeInfo: function (data) {
+    let shiftedData = data << 10;
+    while (this.getBCHDigit(shiftedData) - this.getBCHDigit(this.G15) >= 0) {
+        shiftedData ^= (this.G15 << (this.getBCHDigit(shiftedData) - this.getBCHDigit(this.G15)));
+    }
+    return ((data << 10) | shiftedData) ^ this.G15_MASK;
+},
     getBCHTypeNumber: function (data) {
         var d = data << 12;
         while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
@@ -791,6 +817,7 @@ var Drawing = function (htOption) {
     this._bIsPainted = false;
     this._htOption = htOption;
     this._canvas = createCanvas(200, 200)
+    console.log("this._canvas", this._canvas)
     if (this._htOption._drawer == 'svg') {
         this._oContext = {};
     } else {
@@ -810,7 +837,7 @@ Drawing.prototype.draw = function (oQRCode) {
 
     // QRCode Size
     var nCount = oQRCode.getModuleCount();
-    var nWidth =_htOption.width / nCount;
+    var nWidth = _htOption.width / nCount;
     var nHeight = _htOption.height / nCount;
 
     if (nWidth <= 1) {
@@ -903,14 +930,14 @@ Drawing.prototype.draw = function (oQRCode) {
         bgImg.onload = function () {
             _oContext.globalAlpha = 1;
             _oContext.globalAlpha = _htOption.backgroundImageAlpha;
-            if((_htOption.title || _htOption.subTitle) && _htOption.titleHeight){
+            if ((_htOption.title || _htOption.subTitle) && _htOption.titleHeight) {
                 _oContext.drawImage(bgImg,
                     _htOption.quietZone,
                     _htOption.quietZone + _htOption.titleHeight,
                     _htOption.width,
                     _htOption.height
                 );
-            }else{
+            } else {
                 _oContext.drawImage(bgImg,
                     0,
                     0,
@@ -941,7 +968,7 @@ Drawing.prototype.draw = function (oQRCode) {
 
                 var bIsDark = oQRCode.isDark(row, col);
 
-                var eye = oQRCode.getEye(row, col); // { isDark: true/false, type: PO_TL, PI_TL, PO_TR, PI_TR, PO_BL, PI_BL };
+                var eye = oQRCode.getEyeBlock(row, col); // { isDark: true/false, type: PO_TL, PI_TL, PO_TR, PI_TR, PO_BL, PI_BL };
 
                 var nowDotScale = _htOption.dotScale;
 
@@ -1021,7 +1048,7 @@ Drawing.prototype.draw = function (oQRCode) {
                         // Timing Pattern
                         nowDotScale = _htOption.dotScaleTiming_H;
 
-                        _oContext.fillRect(Math.ceil(nLeft + nWidth * (1 - nowDotScale) / 2), Math.ceil(_htOption.titleHeight + nTop + nHeight * (1 - nowDotScale) / 2),Math.ceil(nWidth * nowDotScale), Math.ceil(nHeight * nowDotScale));
+                        _oContext.fillRect(Math.ceil(nLeft + nWidth * (1 - nowDotScale) / 2), Math.ceil(_htOption.titleHeight + nTop + nHeight * (1 - nowDotScale) / 2), Math.ceil(nWidth * nowDotScale), Math.ceil(nHeight * nowDotScale));
                     } else if (col == 6) {
                         // Timing Pattern
                         nowDotScale = _htOption.dotScaleTiming_V;
@@ -1114,7 +1141,7 @@ Drawing.prototype.draw = function (oQRCode) {
                 }
 
                 var imgContainerX = (_htOption.realWidth - imgContainerW) / 2;
-                var imgContainerY = (_htOption.realWidth- imgContainerH) / 2;
+                var imgContainerY = (_htOption.realWidth - imgContainerH) / 2;
 
                 var imgScale = Math.min(imgContainerW / nw, imgContainerH / nh);
                 var imgW = nw * imgScale;
@@ -1223,6 +1250,7 @@ Drawing.prototype.makeImage = function () {
         } else {
             if (this._htOption.format == 'PNG') {
                 // dataUrl = this._canvas.toDataURL()
+                console.log("PNGGGGGGGGGGGGGGGGGGGGGGGG");
                 this._canvas.toDataURL((err, data) => {
                     t.resolve(data);
                 }) // defaults to PNG
