@@ -814,6 +814,7 @@ function _getUTF8Length(sText) {
  * @param {Object} htOption QRCode Options
  */
 var Drawing = function (htOption) {
+    console.log("htOption", htOption)
     this._bIsPainted = false;
     this._htOption = htOption;
     this._canvas = createCanvas(200, 200)
@@ -1264,7 +1265,6 @@ Drawing.prototype.makeImage = function () {
             this._htOption.onRenderingStart(this._htOption);
         }
         if (this._htOption.format === 'PNG') {
-            console.log("test 7", this._htOption.format)
             this.resolve(this._canvas.createPNGStream());
         } else {
             this.resolve(this._canvas.createJPEGStream());
@@ -1539,8 +1539,11 @@ QRCode.prototype._toData = function (drawer, makeType) {
         makeType: makeType ? makeType : 'URL'
     }
     this._htOption._drawer = drawer;
-
+    console.log("drawer", drawer)
+    console.log("defOptions", defOptions)
+    console.log("this._htOption", this._htOption)
     var _oDrawing = new Drawing(Object.assign({}, this._htOption));
+    console.log("_oDrawing", _oDrawing)
     _oDrawing.makeOptions = defOptions;
 
     try {
