@@ -1203,12 +1203,14 @@ Drawing.prototype.draw = function (oQRCode) {
  */
 Drawing.prototype.makeImage = function () {
     const makeOptions = this.makeOptions;
-
+    console.log("test 1", makeOptions)
     if (makeOptions.makeType === 'FILE') {
+        console.log("test 2", makeOptions.makeType)
         if (this._htOption.onRenderingStart) {
             this._htOption.onRenderingStart(this._htOption);
         }
         if (this._htOption._drawer === 'svg') {
+            console.log("test 3", this._htOption._drawer)
             const svgData = this._oContext.getSerializedSvg();
             fs.writeFile(makeOptions.path, optimize(svgData).data, 'utf8', (err) => {
                 if (err) {
@@ -1221,10 +1223,12 @@ Drawing.prototype.makeImage = function () {
             let stream = undefined;
 
             if (this._htOption.format === 'PNG') {
+                console.log("test 4", this._htOption.format)
                 stream = this._canvas.createPNGStream({
                     compressionLevel: this._htOption.compressionLevel
                 });
             } else {
+                console.log("test 5", this._htOption.format)
                 stream = this._canvas.createJPEGStream({
                     quality: this._htOption.quality
                 });
@@ -1244,6 +1248,7 @@ Drawing.prototype.makeImage = function () {
             this.resolve(optimize(svgData).data);
         } else {
             if (this._htOption.format === 'PNG') {
+                console.log("test 6", this._htOption.format)
                 this._canvas.toDataURL((err, data) => {
                     this.resolve(data);
                 });
@@ -1258,6 +1263,7 @@ Drawing.prototype.makeImage = function () {
             this._htOption.onRenderingStart(this._htOption);
         }
         if (this._htOption.format === 'PNG') {
+            console.log("test 7", this._htOption.format)
             this.resolve(this._canvas.createPNGStream());
         } else {
             this.resolve(this._canvas.createJPEGStream());
