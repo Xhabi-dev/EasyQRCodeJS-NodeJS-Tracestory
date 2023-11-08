@@ -20,7 +20,6 @@
 var {
     createCanvas, loadImage, Image
 } = require('canvas');
-console.log("create canvas ", createCanvas)
 var jsdom = require('jsdom');
 var C2S = require('./canvas2svg');
 var fs = require('fs');
@@ -192,7 +191,6 @@ QRCodeModel.prototype = {
         }
     },
     getBestMaskPattern: function () {
-        console.log("im maskiiing")
         var minLostPoint = 0;
         var pattern = 0;
         for (var i = 0; i < 8; i++) {
@@ -207,7 +205,6 @@ QRCodeModel.prototype = {
     },
 
     setupTimingPattern: function () {
-        console.log("im timing")
         for (var r = 8; r < this.moduleCount - 8; r++) {
             if (this.modules[r][6][0] != null) {
                 continue;
@@ -222,7 +219,6 @@ QRCodeModel.prototype = {
         }
     },
     setupPositionAdjustPattern: function (posName) {
-        console.log("im pos")
         var pos = QRUtil.getPatternPosition(this.typeNumber);
         for (var i = 0; i < pos.length; i++) {
             for (var j = 0; j < pos.length; j++) {
@@ -250,7 +246,6 @@ QRCodeModel.prototype = {
         }
     },
     setupTypeNumber: function (test) {
-        console.log("im type")
         var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
         for (var i = 0; i < 18; i++) {
             var mod = (!test && ((bits >> i) & 1) == 1);
@@ -262,7 +257,6 @@ QRCodeModel.prototype = {
         }
     },
     setupTypeInfo: function (test, maskPattern) {
-        console.log("im type info")
         var data = (this.errorCorrectLevel << 3) | maskPattern;
         var bits = QRUtil.getBCHTypeInfo(data);
         for (var i = 0; i < 15; i++) {
@@ -288,7 +282,6 @@ QRCodeModel.prototype = {
         this.modules[this.moduleCount - 8][8][0] = (!test);
     },
     mapData: function (data, maskPattern) {
-        console.log("im data")
         var inc = -1;
         var row = this.moduleCount - 1;
         var bitIndex = 7;
@@ -327,7 +320,6 @@ QRCodeModel.prototype = {
 QRCodeModel.PAD0 = 0xEC;
 QRCodeModel.PAD1 = 0x11;
 QRCodeModel.createData = function (typeNumber, errorCorrectLevel, dataList) {
-    console.log("im new create")
     const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
     const buffer = new QRBitBuffer();
 
@@ -362,7 +354,6 @@ QRCodeModel.createData = function (typeNumber, errorCorrectLevel, dataList) {
     return QRCodeModel.createBytes(buffer, rsBlocks);
 };
 QRCodeModel.createBytes = function (buffer, rsBlocks) {
-    console.log("im new createBytes")
     let offset = 0;
     let maxDcCount = 0;
     let maxEcCount = 0;
@@ -814,16 +805,13 @@ function _getUTF8Length(sText) {
  * @param {Object} htOption QRCode Options
  */
 var Drawing = function (htOption) {
-    console.log("htOption", htOption)
     this._bIsPainted = false;
     this._htOption = htOption;
     this._canvas = createCanvas(200, 200)
-    console.log("this._canvas", this._canvas)
     if (this._htOption._drawer == 'svg') {
         this._oContext = {};
     } else {
         this._oContext = this._canvas.getContext("2d");
-        console.log("this._oContext", this._oContext)
     }
 
     this._bSupportDataURI = null;
@@ -1232,19 +1220,14 @@ Drawing.prototype.makeImage = function () {
             }
             break;
             case 'URL':
-                console.log("URL URL URL")
                 if (this._htOption._drawer === 'svg') {
                     const svgData = this._oContext.getSerializedSvg();
                     const optimizedData = optimize(svgData).data;
-                    console.log("File size:", optimizedData.length, "bytes");
                     this.resolve(optimizedData);
                 } else {
                     const format = this._htOption.format === 'PNG' ? 'image/png' : 'image/jpeg';
-                    console.log("this._canvas", this._canvas)
-            
                     try {
                         const data = this._canvas.toDataURL(format);
-                        console.log("File size:", data.length, "bytes");
                         this.resolve(data);
                     } catch (error) {
                         console.error("Error converting canvas to data URL:", error);
@@ -1528,11 +1511,7 @@ QRCode.prototype._toData = function (drawer, makeType) {
         makeType: makeType ? makeType : 'URL'
     }
     this._htOption._drawer = drawer;
-    console.log("drawer", drawer)
-    console.log("defOptions", defOptions)
-    console.log("this._htOption", this._htOption)
     var _oDrawing = new Drawing(Object.assign({}, this._htOption));
-    console.log("_oDrawing", _oDrawing)
     _oDrawing.makeOptions = defOptions;
 
     try {
