@@ -1233,11 +1233,13 @@ Drawing.prototype.makeImage = function () {
             break;
 
         case 'URL':
+            console.log("URL URL URL")
             if (this._htOption._drawer === 'svg') {
                 const svgData = this._oContext.getSerializedSvg();
                 this.resolve(optimize(svgData).data);
             } else {
                 const format = this._htOption.format === 'PNG' ? 'image/png' : 'image/jpeg';
+                console.log("format", format)
                 this._canvas.toDataURL(format, (err, data) => {
                     this.resolve(data);
                 });
