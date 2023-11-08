@@ -105,44 +105,44 @@ function QRCodeModel(typeNumber, errorCorrectLevel) {
 }
 
 QRCodeModel.prototype = {
-addData(data, binary, utf8WithoutBOM) {
-  const newData = new QR8bitByte(data, binary, utf8WithoutBOM);
-  this.dataList.push(newData);
-  this.dataCache = null;
-},
-isDark(row, col) {
-    const isValidPosition = row >= 0 && row < this.moduleCount && col >= 0 && col < this.moduleCount;
-    if (!isValidPosition) {
-        throw new Error(`${row},${col}`);
-    }
-    return this.modules[row][col][0];
-},
-getEyeBlock: function (row, col) {
-    // Check if row and col are within valid range
-    if (row < 0 || row >= this.moduleCount || col < 0 || col >= this.moduleCount) {
-        throw new Error(`${row},${col}`);
-    }
-
-    // Get the block from modules array
-    const [isDark, eyeOuterOrInner, position] = this.modules[row][col];
-
-    // Check if eyeOuterOrInner is truthy
-    if (eyeOuterOrInner) {
-        let type = `P${eyeOuterOrInner}_${position}`;
-
-        // Check if position is 'A'
-        if (position === 'A') {
-            type = `A${eyeOuterOrInner}`;
+    addData(data, binary, utf8WithoutBOM) {
+        const newData = new QR8bitByte(data, binary, utf8WithoutBOM);
+        this.dataList.push(newData);
+        this.dataCache = null;
+    },
+    isDark(row, col) {
+        const isValidPosition = row >= 0 && row < this.moduleCount && col >= 0 && col < this.moduleCount;
+        if (!isValidPosition) {
+            throw new Error(`${row},${col}`);
+        }
+        return this.modules[row][col][0];
+    },
+    getEyeBlock: function (row, col) {
+        // Check if row and col are within valid range
+        if (row < 0 || row >= this.moduleCount || col < 0 || col >= this.moduleCount) {
+            throw new Error(`${row},${col}`);
         }
 
-        return {
-            isDarkBlock: isDark,
-            type: type
-        };
-    }
+        // Get the block from modules array
+        const [isDark, eyeOuterOrInner, position] = this.modules[row][col];
 
-    return null;
-},
+        // Check if eyeOuterOrInner is truthy
+        if (eyeOuterOrInner) {
+            let type = `P${eyeOuterOrInner}_${position}`;
+
+            // Check if position is 'A'
+            if (position === 'A') {
+                type = `A${eyeOuterOrInner}`;
+            }
+
+            return {
+                isDarkBlock: isDark,
+                type: type
+            };
+        }
+
+        return null;
+    },
     getModuleCount: function () {
         return this.moduleCount;
     },
@@ -330,35 +330,35 @@ QRCodeModel.createData = function (typeNumber, errorCorrectLevel, dataList) {
     console.log("im new create")
     const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
     const buffer = new QRBitBuffer();
-    
+
     for (const data of dataList) {
         buffer.put(data.mode, 4);
         buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber));
         data.write(buffer);
     }
-    
+
     const totalDataCount = rsBlocks.reduce((acc, rsBlock) => acc + rsBlock.dataCount, 0);
-    
+
     if (buffer.getLengthInBits() > totalDataCount * 8) {
         throw new Error(`code length overflow. (${buffer.getLengthInBits()} > ${totalDataCount * 8})`);
     }
-    
+
     if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
         buffer.put(0, 4);
     }
-    
+
     while (buffer.getLengthInBits() % 8 != 0) {
         buffer.putBit(false);
     }
-    
+
     while (buffer.getLengthInBits() < totalDataCount * 8) {
         buffer.put(QRCodeModel.PAD0, 8);
-        
+
         if (buffer.getLengthInBits() < totalDataCount * 8) {
             buffer.put(QRCodeModel.PAD1, 8);
         }
     }
-    
+
     return QRCodeModel.createBytes(buffer, rsBlocks);
 };
 QRCodeModel.createBytes = function (buffer, rsBlocks) {
@@ -441,13 +441,13 @@ var QRUtil = {
     G15: (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
     G18: (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
     G15_MASK: (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1),
-getBCHTypeInfo: function (data) {
-    let shiftedData = data << 10;
-    while (this.getBCHDigit(shiftedData) - this.getBCHDigit(this.G15) >= 0) {
-        shiftedData ^= (this.G15 << (this.getBCHDigit(shiftedData) - this.getBCHDigit(this.G15)));
-    }
-    return ((data << 10) | shiftedData) ^ this.G15_MASK;
-},
+    getBCHTypeInfo: function (data) {
+        let shiftedData = data << 10;
+        while (this.getBCHDigit(shiftedData) - this.getBCHDigit(this.G15) >= 0) {
+            shiftedData ^= (this.G15 << (this.getBCHDigit(shiftedData) - this.getBCHDigit(this.G15)));
+        }
+        return ((data << 10) | shiftedData) ^ this.G15_MASK;
+    },
     getBCHTypeNumber: function (data) {
         var d = data << 12;
         while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
@@ -1231,19 +1231,20 @@ Drawing.prototype.makeImage = function () {
                 });
             }
             break;
-
         case 'URL':
             console.log("URL URL URL")
             if (this._htOption._drawer === 'svg') {
                 const svgData = this._oContext.getSerializedSvg();
-                this.resolve(optimize(svgData).data);
+                const optimizedData = optimize(svgData).data;
+                console.log("File size:", optimizedData.length, "bytes");
+                this.resolve(optimizedData);
             } else {
                 const format = this._htOption.format === 'PNG' ? 'image/png' : 'image/jpeg';
-                console.log("format", format)
+                console.log("this._canvas", this._canvas)
                 this._canvas.toDataURL(format, (err, data) => {
+                    console.log("File size:", data.length, "bytes");
                     this.resolve(data);
                 });
-                console.log("resolved", this.resolve(data))
             }
             break;
 
