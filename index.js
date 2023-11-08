@@ -1252,6 +1252,7 @@ Drawing.prototype.makeImage = function () {
                 this._canvas.toDataURL((err, data) => {
                     this.resolve(data);
                 });
+                console.log("test 6.5 resolved", this._canvas)
             } else {
                 this._canvas.toDataURL('image/jpeg', (err, data) => {
                     this.resolve(data);
