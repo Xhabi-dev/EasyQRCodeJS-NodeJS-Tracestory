@@ -1202,78 +1202,66 @@ Drawing.prototype.draw = function (oQRCode) {
  * Make the image from Canvas
  */
 Drawing.prototype.makeImage = function () {
+    const makeOptions = this.makeOptions;
 
-    var makeOptions = this.makeOptions;
-    var t = this;
-
-    if (makeOptions.makeType == 'FILE') {
-
+    if (makeOptions.makeType === 'FILE') {
         if (this._htOption.onRenderingStart) {
             this._htOption.onRenderingStart(this._htOption);
         }
-        if (this._htOption._drawer == 'svg') {
-            let data = this._oContext.getSerializedSvg();
-            fs.writeFile(makeOptions.path, optimize(data).data, 'utf8', function (err) {
+        if (this._htOption._drawer === 'svg') {
+            const svgData = this._oContext.getSerializedSvg();
+            fs.writeFile(makeOptions.path, optimize(svgData).data, 'utf8', (err) => {
                 if (err) {
-                    t.reject(err);
+                    this.reject(err);
                 }
-                t.resolve({});
+                this.resolve({});
             });
         } else {
-            var out = fs.createWriteStream(makeOptions.path)
+            const out = fs.createWriteStream(makeOptions.path);
+            let stream = undefined;
 
-            var stream = undefined;
-
-            if (this._htOption.format == 'PNG') {
+            if (this._htOption.format === 'PNG') {
                 stream = this._canvas.createPNGStream({
                     compressionLevel: this._htOption.compressionLevel
-                })
+                });
             } else {
                 stream = this._canvas.createJPEGStream({
                     quality: this._htOption.quality
-                })
+                });
             }
 
             stream.pipe(out);
             out.on('finish', () => {
-                t.resolve({});
-            })
+                this.resolve({});
+            });
         }
-
-    } else if (makeOptions.makeType == 'URL') {
-
+    } else if (makeOptions.makeType === 'URL') {
         if (this._htOption.onRenderingStart) {
             this._htOption.onRenderingStart(this._htOption);
         }
-        if (this._htOption._drawer == 'svg') {
-            let data = this._oContext.getSerializedSvg();
-            t.resolve(optimize(data).data);
+        if (this._htOption._drawer === 'svg') {
+            const svgData = this._oContext.getSerializedSvg();
+            this.resolve(optimize(svgData).data);
         } else {
-            if (this._htOption.format == 'PNG') {
-                // dataUrl = this._canvas.toDataURL()
-                console.log("PNGGGGGGGGGGGGGGGGGGGGGGGG");
+            if (this._htOption.format === 'PNG') {
                 this._canvas.toDataURL((err, data) => {
-                    t.resolve(data);
-                }) // defaults to PNG
+                    this.resolve(data);
+                });
             } else {
                 this._canvas.toDataURL('image/jpeg', (err, data) => {
-                    t.resolve(data);
-                })
+                    this.resolve(data);
+                });
             }
         }
-    } else if (makeOptions.makeType == 'STREAM') {
-
+    } else if (makeOptions.makeType === 'STREAM') {
         if (this._htOption.onRenderingStart) {
             this._htOption.onRenderingStart(this._htOption);
         }
-
-        if (this._htOption.format == 'PNG') {
-            // dataUrl = this._canvas.toDataURL()
-            t.resolve(this._canvas.createPNGStream());
+        if (this._htOption.format === 'PNG') {
+            this.resolve(this._canvas.createPNGStream());
         } else {
-            t.resolve(this._canvas.createJPEGStream());
+            this.resolve(this._canvas.createJPEGStream());
         }
-
     }
 };
 
