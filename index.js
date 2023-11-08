@@ -822,6 +822,7 @@ var Drawing = function (htOption) {
         this._oContext = {};
     } else {
         this._oContext = this._canvas.getContext("2d");
+        console.log("this._oContext", this._oContext)
     }
 
     this._bSupportDataURI = null;
@@ -866,8 +867,8 @@ Drawing.prototype.draw = function (oQRCode) {
         });
     }
 
-    this._oContext.patternQuality = 'best'; //'fast'|'good'|'best'|'nearest'|'bilinear'
-    this._oContext.quality = 'best'; //'fast'|'good'|'best'|'nearest'|'bilinear'
+    this._oContext.patternQuality = 'fast'; //'fast'|'good'|'best'|'nearest'|'bilinear'
+    this._oContext.quality = 'fast'; //'fast'|'good'|'best'|'nearest'|'bilinear'
     this._oContext.textDrawingMode = 'path'; // 'path'|'glyph'
     this._oContext.antialias = 'gray'; // 'default'|'none'|'gray'|'subpixel'
 
