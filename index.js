@@ -19,7 +19,7 @@
  */
 var {
     createCanvas, loadImage, Image
-} = require('canvas');
+} = require('@napi-rs/canvas');
 var jsdom = require('jsdom');
 var C2S = require('./canvas2svg');
 var fs = require('fs');

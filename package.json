@@ -41,9 +41,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "canvas": "^2.11.2",
+    "@napi-rs/canvas": "^0.1.50",
     "jsdom": "^22.1.0",
     "svgo": "^3.0.2"
-  },
-  "devDependencies": {}
+  }
 }
