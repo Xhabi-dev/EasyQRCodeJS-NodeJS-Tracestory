@@ -18,10 +18,10 @@
  *
  */
 var {
-    createCanvas, loadImage, Image
+    createCanvas, Image
 } = require('@napi-rs/canvas');
 var jsdom = require('jsdom');
-var C2S = require('./canvas2svg');
+// var C2S = require('./canvas2svg');
 var fs = require('fs');
 var {
     optimize
@@ -847,14 +847,15 @@ Drawing.prototype.draw = function (oQRCode) {
     this._canvas.width = _htOption.realWidth;
     this._canvas.height = _htOption.realHeight;
 
-    if (_htOption._drawer == 'svg') {
-        this._oContext = new C2S({
-            document: win.document,
-            XMLSerializer: win.XMLSerializer,
-            width: this._canvas.width,
-            height: this._canvas.height
-        });
-    }
+    // if (_htOption._drawer == 'svg') {
+    //     console.log("svg maluco")
+    //     this._oContext = new C2S({
+    //         document: win.document,
+    //         XMLSerializer: win.XMLSerializer,
+    //         width: this._canvas.width,
+    //         height: this._canvas.height
+    //     });
+    // }
 
     this._oContext.patternQuality = 'fast'; //'fast'|'good'|'best'|'nearest'|'bilinear'
     this._oContext.quality = 'fast'; //'fast'|'good'|'best'|'nearest'|'bilinear'
@@ -1168,8 +1169,12 @@ Drawing.prototype.draw = function (oQRCode) {
                 // console.error(e);
                 t.reject(e);
             }
+
             img.originalSrc = _htOption.logo;
-            img.src = _htOption.logo;
+            const base64String = _htOption.logo.replace(/^data:image\/\w+;base64,/, ''); // Remove data URI scheme   
+            // Decode base64 string into a buffer
+            const buffer = Buffer.from(base64String, 'base64');
+            img.src = buffer;
             // if (img.complete) {
             //     img.onload = null;
             //     generateLogoImg(img);
