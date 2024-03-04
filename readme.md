@@ -404,6 +404,10 @@ var qrcode = new QRCode(options);
         res.pipe(out).on('finish', () => console.log('Finsihed'));
     })
 	```
+
+## CHANGES LISTED
+>Changed the use of canvas to napirs/canvas for a lightweight option
+>Disabled canvas2svg since my org doesnt use it
         
 ## TypeScript Support
 
