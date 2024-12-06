@@ -20,17 +20,17 @@
 var {
     createCanvas, Image
 } = require('@napi-rs/canvas');
-var jsdom = require('jsdom');
+// var jsdom = require('jsdom');
 // var C2S = require('./canvas2svg');
 var fs = require('fs');
 var {
     optimize
 } = require('svgo');
 
-const {
-    JSDOM
-} = jsdom;
-const win = new JSDOM().window;
+// const {
+//     JSDOM
+// } = jsdom;
+// const win = new JSDOM().window;
 
 function QR8bitByte(data, binary, utf8WithoutBOM) {
     this.mode = QRMode.MODE_8BIT_BYTE;
